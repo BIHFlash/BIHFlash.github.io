@@ -1,0 +1,105 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<script type="text/javascript">
+			function getCookie(c_name){
+				var c_value = document.cookie;
+				var c_start = c_value.indexOf(" " + c_name + "=");
+				if (c_start == -1) {
+					c_start = c_value.indexOf(c_name + "=");
+				}
+				if (c_start == -1){
+					c_value = null;
+				}else{
+					c_start = c_value.indexOf("=", c_start) + 1;
+					var c_end = c_value.indexOf(";", c_start);
+					if (c_end == -1){
+						c_end = c_value.length;
+					}
+					c_value = unescape(c_value.substring(c_start,c_end));
+				}
+				return c_value;
+			}
+			function setCookie(c_name,value,exdays){
+				var exdate=new Date();
+				exdate.setDate(exdate.getDate() + exdays);
+				var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString())+ ';Path=/';
+				document.cookie=c_name + "=" + c_value;
+			}
+			
+			/*cookieEnabled*/
+			var cookieEnabled=(navigator.cookieEnabled)? true : false;
+			if (typeof navigator.cookieEnabled=="undefined" && !cookieEnabled){	document.cookie="testcookie";
+				cookieEnabled=(document.cookie.indexOf("testcookie")!=-1)? true : false;
+			}
+			
+			/*Check if localstorage available*/
+			var localstorageAvailable;
+			try {
+				localStorage.setItem('mod', 'mod');
+				localStorage.removeItem('mod');
+				localstorageAvailable = true;
+			} catch(e) {
+				localstorageAvailable = false;
+			}
+
+			window.onmessage = function(e) {
+				var verifyData = JSON.parse(e.data);
+				var parent = window.parent;
+
+				var key = verifyData.key;
+				switch(verifyData.method) {
+					case 'set':
+						switch(verifyData.storage) {
+							case 'localStorage':
+								try{
+									localStorage.setItem(key, verifyData.data);
+								}catch(e) {
+									console.log('Unable to write to localStorage');
+								}
+								break;
+							case 'cookie':
+								setCookie(key, verifyData.data, 365);
+								break;
+						}
+						break;
+					case 'get':
+						savedValueLs = '';
+						try{
+							savedValueLs = localStorage.getItem(key);
+						}catch(e) {
+							console.log('Unable to read localStorage');
+						}
+
+						savedValueC = getCookie(key);
+
+						if (savedValueLs == null) {savedValueLs = ''}
+						if (savedValueC == null) {savedValueC = ''}
+
+						if (savedValueLs != '' && savedValueC != '' && savedValueLs != savedValueC){
+							savedValueLs = savedValueC;
+						}
+
+						if (savedValueC == '' && savedValueLs != ''){
+							savedValueC = savedValueLs;
+						}
+						parent.postMessage(JSON.stringify({key: verifyData.key, storage: verifyData.storage, lsValue: savedValueLs, cValue: savedValueC, functionKey: verifyData.functionKey}),"*");
+						break;
+					case 'remove':
+						switch(verifyData.storage) {
+							case 'localStorage':
+								try{
+									localStorage.removeItem(key);
+								}catch(e) {
+									console.log('Unable to remove from localStorage');
+								}
+								break;
+							case 'cookie':
+								setCookie(key, verifyData.data, 365);
+								break;
+						}
+						break;
+				}
+			};
+		</script>
+	</head>
+<body></body></html>
